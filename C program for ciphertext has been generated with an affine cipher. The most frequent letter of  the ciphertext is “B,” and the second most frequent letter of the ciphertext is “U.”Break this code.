@@ -1,0 +1,76 @@
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+
+// Function to find modular inverse of a under mod 26
+int modInverse(int a) {
+    a = a % 26;
+    for (int x = 1; x < 26; x++)
+        if ((a * x) % 26 == 1)
+            return x;
+    return -1;
+}
+
+// Function to decrypt a character
+char decryptChar(char ch, int a_inv, int b) {
+    if (isalpha(ch)) {
+        ch = toupper(ch);
+        int val = ch - 'A';
+        int p = (a_inv * (val - b + 26)) % 26;
+        return p + 'A';
+    }
+    return ch;
+}
+
+int main() {
+    char ciphertext[500];
+    int a, b, a_inv;
+
+    // Step 1: Assume 'B' -> 'E' and 'U' -> 'T'
+    int c1 = 'B' - 'A';  // 1
+    int c2 = 'U' - 'A';  // 20
+    int p1 = 'E' - 'A';  // 4
+    int p2 = 'T' - 'A';  // 19
+
+    // Step 2: Solve for a
+    // (c2 - c1) ≡ a(p2 - p1) mod 26
+    // 19 ≡ a*15 mod 26
+    int delta_p = (p2 - p1 + 26) % 26;  // 15
+    int delta_c = (c2 - c1 + 26) % 26;  // 19
+
+    // Find modular inverse of delta_p
+    int inv = modInverse(delta_p);
+    if (inv == -1) {
+        printf("No solution: delta_p has no modular inverse\n");
+        return 1;
+    }
+
+    a = (delta_c * inv) % 26;
+    a_inv = modInverse(a);
+    if (a_inv == -1) {
+        printf("No modular inverse for a = %d\n", a);
+        return 1;
+    }
+
+    // Find b from c1 = (a * p1 + b) mod 26
+    b = (c1 - a * p1 + 26 * 26) % 26;
+
+    // Print discovered keys
+    printf("Discovered keys: a = %d, b = %d\n", a, b);
+
+    // Input ciphertext
+    printf("Enter ciphertext: ");
+    scanf(" %[^\n]", ciphertext); // Read line including spaces
+
+    printf("Decrypted text: ");
+    for (int i = 0; ciphertext[i] != '\0'; i++) {
+        char ch = ciphertext[i];
+        if (isalpha(ch))
+            printf("%c", decryptChar(ch, a_inv, b));
+        else
+            printf("%c", ch); // Preserve non-letter characters
+    }
+
+    printf("\n");
+    return 0;
+}
