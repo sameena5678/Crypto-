@@ -1,0 +1,56 @@
+#include <stdio.h>
+#include <string.h>
+#include <openssl/aes.h>
+#include <openssl/rand.h>
+
+void print_hex(unsigned char *data, int len, const char *label) {
+    printf("%s:", label);
+    for (int i = 0; i < len; ++i)
+        printf(" %02X", data[i]);
+    printf("\n");
+}
+
+int main() {
+    AES_KEY enc_key, dec_key;
+    unsigned char key[16] = "0123456789ABCDEF";
+    unsigned char iv[16] = "1234567890ABCDEF";
+
+    unsigned char plaintext[32] = "BLOCK1--BLOCK2--BLOCK3--BLOCK4--";
+    unsigned char pt_error[32];
+    memcpy(pt_error, plaintext, 32);
+    pt_error[0] ^= 0x01;  // Introduce error in plaintext block 1
+
+    unsigned char ecb_cipher[32], cbc_cipher[32], decrypted[32];
+
+    AES_set_encrypt_key(key, 128, &enc_key);
+    AES_set_decrypt_key(key, 128, &dec_key);
+
+    // ECB encryption
+    for (int i = 0; i < 32; i += 16)
+        AES_encrypt(plaintext + i, ecb_cipher + i, &enc_key);
+
+    // CBC encryption with clean plaintext
+    unsigned char iv_cbc[16];
+    memcpy(iv_cbc, iv, 16);
+    AES_cbc_encrypt(plaintext, cbc_cipher, 32, &enc_key, iv_cbc, AES_ENCRYPT);
+
+    // CBC encryption with bit error in P1
+    unsigned char cbc_cipher_err[32];
+    memcpy(iv_cbc, iv, 16);
+    AES_cbc_encrypt(pt_error, cbc_cipher_err, 32, &enc_key, iv_cbc, AES_ENCRYPT);
+
+    // Introduce error in ciphertext block 1 for CBC
+    cbc_cipher[0] ^= 0x80;
+
+    // Decrypt corrupted CBC
+    memcpy(iv_cbc, iv, 16);
+    AES_cbc_encrypt(cbc_cipher, decrypted, 32, &dec_key, iv_cbc, AES_DECRYPT);
+
+    // Output
+    printf("\nOriginal Plaintext:\n%s\n", plaintext);
+    print_hex(ecb_cipher, 32, "\nECB Cipher");
+    print_hex(cbc_cipher, 32, "\nCBC Cipher (C1 corrupted)");
+    printf("\nDecrypted from corrupted CBC:\n%.*s\n", 32, decrypted);
+
+    return 0;
+}
