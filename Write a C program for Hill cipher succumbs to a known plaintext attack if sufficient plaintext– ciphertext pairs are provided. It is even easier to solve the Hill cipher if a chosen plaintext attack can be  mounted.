@@ -1,0 +1,97 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#define MOD 26
+
+// Convert character to number (a=0, ..., z=25)
+int charToNum(char c) {
+    return tolower(c) - 'a';
+}
+
+// Compute modular inverse using Extended Euclidean Algorithm
+int modInverse(int a, int mod) {
+    int m0 = mod, t, q;
+    int x0 = 0, x1 = 1;
+
+    if (mod == 1) return 0;
+
+    while (a > 1) {
+        q = a / mod;
+        t = mod;
+
+        mod = a % mod, a = t;
+        t = x0;
+
+        x0 = x1 - q * x0;
+        x1 = t;
+    }
+
+    return (x1 + m0) % m0;
+}
+
+// Find inverse of 2x2 matrix mod 26
+int inverseMatrix2x2(int m[2][2], int inv[2][2]) {
+    int det = (m[0][0]*m[1][1] - m[0][1]*m[1][0]) % MOD;
+    if (det < 0) det += MOD;
+
+    int detInv = modInverse(det, MOD);
+    if (detInv == 0) return 0; // Not invertible
+
+    inv[0][0] =  (m[1][1] * detInv) % MOD;
+    inv[0][1] = (-m[0][1] * detInv + MOD) % MOD;
+    inv[1][0] = (-m[1][0] * detInv + MOD) % MOD;
+    inv[1][1] =  (m[0][0] * detInv) % MOD;
+
+    return 1;
+}
+
+// Multiply two 2x2 matrices mod 26
+void multiplyMatrix(int a[2][2], int b[2][2], int result[2][2]) {
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            result[i][j] = 0;
+            for (int k = 0; k < 2; k++) {
+                result[i][j] += a[i][k] * b[k][j];
+            }
+            result[i][j] %= MOD;
+        }
+    }
+}
+
+int main() {
+    char plainText[5], cipherText[5];
+    int P[2][2], C[2][2], P_inv[2][2], K[2][2];
+
+    printf("Enter 4-letter known plaintext (e.g., help): ");
+    scanf("%s", plainText);
+
+    printf("Enter corresponding 4-letter ciphertext: ");
+    scanf("%s", cipherText);
+
+    // Fill plaintext and ciphertext matrices
+    for (int i = 0; i < 4; i++) {
+        if (i < 2) {
+            P[0][i] = charToNum(plainText[i]);
+            C[0][i] = charToNum(cipherText[i]);
+        } else {
+            P[1][i-2] = charToNum(plainText[i]);
+            C[1][i-2] = charToNum(cipherText[i]);
+        }
+    }
+
+    // Invert plaintext matrix
+    if (!inverseMatrix2x2(P, P_inv)) {
+        printf("Error: Plaintext matrix is not invertible modulo 26.\n");
+        return 1;
+    }
+
+    // Compute key matrix: K = C × P⁻¹ mod 26
+    multiplyMatrix(C, P_inv, K);
+
+    printf("\nRecovered Key Matrix:\n");
+    printf("| %2d %2d |\n", K[0][0], K[0][1]);
+    printf("| %2d %2d |\n", K[1][0], K[1][1]);
+
+    return 0;
+}
