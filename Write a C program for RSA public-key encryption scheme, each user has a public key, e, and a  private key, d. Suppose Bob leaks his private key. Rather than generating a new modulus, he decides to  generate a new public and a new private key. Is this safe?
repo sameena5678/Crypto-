@@ -1,0 +1,59 @@
+#include <stdio.h>
+
+// Compute GCD using Euclidean algorithm
+int gcd(int a, int b) {
+    while (b != 0) {
+        int t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+
+// Extended Euclidean Algorithm to find modular inverse
+int extended_gcd(int a, int b, int *x, int *y) {
+    if (a == 0) {
+        *x = 0; *y = 1;
+        return b;
+    }
+    int x1, y1;
+    int g = extended_gcd(b % a, a, &x1, &y1);
+    *x = y1 - (b / a) * x1;
+    *y = x1;
+    return g;
+}
+
+int mod_inverse(int e, int phi) {
+    int x, y;
+    int g = extended_gcd(e, phi, &x, &y);
+    if (g != 1)
+        return -1;
+    return (x % phi + phi) % phi;
+}
+
+int main() {
+    // Example RSA parameters
+    int n = 3599;   // n = p × q = 59 × 61
+    int e = 31;     // Public key
+    int d = 3371;   // Leaked private key
+
+    // Step 1: Compute φ(n) = e*d mod φ(n) = 1 → φ(n) = (e*d - 1) / k
+    int phi = (59 - 1) * (61 - 1); // We assume attacker finds p & q from d
+    printf("Attacker computes φ(n) = %d\n", phi);
+
+    // Now attacker can compute a new e, d pair
+    int new_e = 17;
+    if (gcd(new_e, phi) != 1) {
+        printf("New e is not valid.\n");
+        return 1;
+    }
+
+    int new_d = mod_inverse(new_e, phi);
+    printf("Generated new public key e = %d\n", new_e);
+    printf("Generated new private key d = %d\n", new_d);
+
+    // Conclusion
+    printf("Reusing n is unsafe. Attacker can regenerate any number of valid key pairs.\n");
+
+    return 0;
+}
