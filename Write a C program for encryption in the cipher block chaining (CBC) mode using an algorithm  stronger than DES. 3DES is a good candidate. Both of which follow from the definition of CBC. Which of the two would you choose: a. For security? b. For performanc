@@ -1,0 +1,105 @@
+#include <stdio.h>
+#include <string.h>
+#include <openssl/des.h>
+#include <openssl/rand.h>
+
+// Padding to make the length a multiple of 8
+int pad_data(unsigned char *data, int data_len) {
+    int pad_len = 8 - (data_len % 8);
+    for (int i = 0; i < pad_len; i++) {
+        data[data_len + i] = pad_len;
+    }
+    return data_len + pad_len;
+}
+
+int main() {
+    DES_cblock key1 = {0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef};
+    DES_cblock key2 = {0x55,0x44,0x33,0x22,0x11,0x00,0xaa,0xbb};
+    DES_cblock key3 = {0xfe,0xdc,0xba,0x98,0x76,0x54,0x32,0x10};
+    DES_key_schedule ks1, ks2, ks3;
+
+    DES_set_key_unchecked(&key1, &ks1);
+    DES_set_key_unchecked(&key2, &ks2);
+    DES_set_key_unchecked(&key3, &ks3);
+
+    unsigned char iv[8];
+    RAND_bytes(iv, sizeof(iv));
+
+    unsigned char input[256], padded[264];
+    unsigned char output[264];
+    int input_len;
+
+    printf("Enter plaintext (max 255 characters): ");
+    fgets((char *)input, 256, stdin);
+    input_len = strlen((char *)input);
+    if (input[input_len - 1] == '\n') {
+        input[input_len - 1] = '\0';
+        input_len--;
+    }
+
+    memcpy(padded, input, input_len);
+    int padded_len = pad_data(padded, input_len);
+
+    // Encryption using 3DES in CBC mode
+    DES_ede3_cbc_encrypt(padded, output, padded_len, &ks1, &ks2, &ks3, (DES_cblock *)iv, DES_ENCRYPT);
+
+    printf("\nEncrypted ciphertext (hex):\n");
+    for (int i = 0; i < padded_len; i++) {
+        printf("%02X ", output[i]);
+    }
+    printf("\n");
+
+    return 0;
+}#include <stdio.h>
+#include <string.h>
+#include <openssl/des.h>
+#include <openssl/rand.h>
+
+// Padding to make the length a multiple of 8
+int pad_data(unsigned char *data, int data_len) {
+    int pad_len = 8 - (data_len % 8);
+    for (int i = 0; i < pad_len; i++) {
+        data[data_len + i] = pad_len;
+    }
+    return data_len + pad_len;
+}
+
+int main() {
+    DES_cblock key1 = {0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef};
+    DES_cblock key2 = {0x55,0x44,0x33,0x22,0x11,0x00,0xaa,0xbb};
+    DES_cblock key3 = {0xfe,0xdc,0xba,0x98,0x76,0x54,0x32,0x10};
+    DES_key_schedule ks1, ks2, ks3;
+
+    DES_set_key_unchecked(&key1, &ks1);
+    DES_set_key_unchecked(&key2, &ks2);
+    DES_set_key_unchecked(&key3, &ks3);
+
+    unsigned char iv[8];
+    RAND_bytes(iv, sizeof(iv));
+
+    unsigned char input[256], padded[264];
+    unsigned char output[264];
+    int input_len;
+
+    printf("Enter plaintext (max 255 characters): ");
+    fgets((char *)input, 256, stdin);
+    input_len = strlen((char *)input);
+    if (input[input_len - 1] == '\n') {
+        input[input_len - 1] = '\0';
+        input_len--;
+    }
+
+    memcpy(padded, input, input_len);
+    int padded_len = pad_data(padded, input_len);
+
+    // Encryption using 3DES in CBC mode
+    DES_ede3_cbc_encrypt(padded, output, padded_len, &ks1, &ks2, &ks3, (DES_cblock *)iv, DES_ENCRYPT);
+
+    printf("\nEncrypted ciphertext (hex):\n");
+    for (int i = 0; i < padded_len; i++) {
+        printf("%02X ", output[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
