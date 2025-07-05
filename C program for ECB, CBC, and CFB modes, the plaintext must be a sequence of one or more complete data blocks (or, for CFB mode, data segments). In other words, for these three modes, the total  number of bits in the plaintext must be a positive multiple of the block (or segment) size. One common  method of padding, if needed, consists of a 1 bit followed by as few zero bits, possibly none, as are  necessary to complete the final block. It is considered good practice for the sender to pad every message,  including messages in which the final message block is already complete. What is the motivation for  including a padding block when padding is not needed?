@@ -1,0 +1,38 @@
+#include <openssl/evp.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define BLOCK_SIZE 8 // DES block size
+
+// Padding function: append 0x80 followed by 0x00s
+int pad(unsigned char *input, int len) {
+    input[len] = 0x80;
+    for (int i = len + 1; i < len + BLOCK_SIZE - (len % BLOCK_SIZE); i++) {
+        input[i] = 0x00;
+    }
+    return len + BLOCK_SIZE - (len % BLOCK_SIZE);
+}
+
+void print_hex(const char *label, unsigned char *data, int len) {
+    printf("%s: ", label);
+    for (int i = 0; i < len; i++)
+        printf("%02X ", data[i]);
+    printf("\n");
+}
+
+void encrypt_mode(const EVP_CIPHER *cipher, const char *mode, unsigned char *key,
+                  unsigned char *iv, unsigned char *plaintext, int len) {
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    unsigned char ciphertext[128];
+    int outlen, tmplen;
+
+    EVP_EncryptInit_ex(ctx, cipher, NULL, key, iv);
+    EVP_CIPHER_CTX_set_padding(ctx, 0); // We'll pad manually
+
+    unsigned char padded[128];
+    memcpy(padded, plaintext, len);
+    int padded_len = pad(padded, len);
+
+    EVP_EncryptUpdate(ctx, ciphertext, &outlen, padded, padded_len);
+    EVP_Enc_
