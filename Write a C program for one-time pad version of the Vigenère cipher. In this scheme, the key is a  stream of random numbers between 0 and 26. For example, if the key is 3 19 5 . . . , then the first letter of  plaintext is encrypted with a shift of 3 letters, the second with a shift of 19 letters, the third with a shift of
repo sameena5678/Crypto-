@@ -1,0 +1,84 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <ctype.h>
+
+#define MAX_LEN 100
+
+// Convert character to 0-25
+int charToNum(char c) {
+    return toupper(c) - 'A';
+}
+
+// Convert number 0-25 to character
+char numToChar(int n) {
+    return (char)(n % 26 + 'A');
+}
+
+// Encrypt function
+void encrypt(char *plaintext, int *key, char *ciphertext) {
+    for (int i = 0; i < strlen(plaintext); i++) {
+        if (isalpha(plaintext[i])) {
+            int p = charToNum(plaintext[i]);
+            int c = (p + key[i]) % 26;
+            ciphertext[i] = numToChar(c);
+        } else {
+            ciphertext[i] = plaintext[i];
+        }
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+}
+
+// Decrypt function
+void decrypt(char *ciphertext, int *key, char *plaintext) {
+    for (int i = 0; i < strlen(ciphertext); i++) {
+        if (isalpha(ciphertext[i])) {
+            int c = charToNum(ciphertext[i]);
+            int p = (c - key[i] + 26) % 26;
+            plaintext[i] = numToChar(p);
+        } else {
+            plaintext[i] = ciphertext[i];
+        }
+    }
+    plaintext[strlen(ciphertext)] = '\0';
+}
+
+// Generate random key
+void generateKey(int *key, int len) {
+    for (int i = 0; i < len; i++) {
+        key[i] = rand() % 26;  // Random key from 0 to 25
+    }
+}
+
+void printKey(int *key, int len) {
+    printf("Key Stream: ");
+    for (int i = 0; i < len; i++) {
+        printf("%d ", key[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    char plaintext[MAX_LEN], ciphertext[MAX_LEN], decrypted[MAX_LEN];
+    int key[MAX_LEN];
+
+    srand(time(NULL));  // Seed RNG
+
+    printf("Enter plaintext (letters only): ");
+    fgets(plaintext, MAX_LEN, stdin);
+    plaintext[strcspn(plaintext, "\n")] = '\0'; // Remove newline
+
+    int len = strlen(plaintext);
+    generateKey(key, len);
+
+    encrypt(plaintext, key, ciphertext);
+    decrypt(ciphertext, key, decrypted);
+
+    printf("\nPlaintext : %s\n", plaintext);
+    printKey(key, len);
+    printf("Encrypted : %s\n", ciphertext);
+    printf("Decrypted : %s\n", decrypted);
+
+    return 0;
+}
