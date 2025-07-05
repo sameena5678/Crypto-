@@ -1,0 +1,107 @@
+#include <stdio.h>
+#include <stdint.h>
+
+// IP and IP^-1
+int IP[] = {1, 5, 2, 0, 3, 7, 4, 6};
+int IP_INV[] = {3, 0, 2, 4, 6, 1, 7, 5};
+int P10[] = {2, 4, 1, 6, 3, 9, 0, 8, 7, 5};
+int P8[]  = {5, 2, 6, 3, 7, 4, 9, 8};
+int EP[]  = {3, 0, 1, 2, 1, 2, 3, 0};
+int P4[]  = {1, 3, 2, 0};
+
+// S-boxes
+int S0[4][4] = {
+    {1, 0, 3, 2},
+    {3, 2, 1, 0},
+    {0, 2, 1, 3},
+    {3, 1, 3, 2}
+};
+int S1[4][4] = {
+    {0, 1, 2, 3},
+    {2, 0, 1, 3},
+    {3, 0, 1, 0},
+    {2, 1, 0, 3}
+};
+
+uint16_t permute(uint16_t input, int *p, int n) {
+    uint16_t output = 0;
+    for (int i = 0; i < n; i++)
+        output |= ((input >> (n - 1 - p[i])) & 1) << (n - 1 - i);
+    return output;
+}
+
+uint16_t left_shift(uint16_t k, int n) {
+    return ((k << n) | (k >> (5 - n))) & 0x1F;
+}
+
+void generate_keys(uint16_t key, uint8_t *k1, uint8_t *k2) {
+    key = permute(key, P10, 10);
+    uint16_t left = (key >> 5) & 0x1F;
+    uint16_t right = key & 0x1F;
+
+    left = left_shift(left, 1);
+    right = left_shift(right, 1);
+    *k1 = permute((left << 5) | right, P8, 10);
+
+    left = left_shift(left, 2);
+    right = left_shift(right, 2);
+    *k2 = permute((left << 5) | right, P8, 10);
+}
+
+uint8_t F(uint8_t right, uint8_t subkey) {
+    uint8_t expanded = permute(right, EP, 8);
+    uint8_t xored = expanded ^ subkey;
+
+    int row0 = ((xored & 0x80) >> 6) | ((xored & 0x10) >> 4);
+    int col0 = (xored & 0x60) >> 5;
+    int s0 = S0[row0][col0];
+
+    int row1 = ((xored & 0x08) >> 2) | (xored & 0x01);
+    int col1 = (xored & 0x06) >> 1;
+    int s1 = S1[row1][col1];
+
+    uint8_t out = (s0 << 2) | s1;
+    return permute(out, P4, 4);
+}
+
+uint8_t sdes_encrypt(uint8_t pt, uint8_t k1, uint8_t k2) {
+    pt = permute(pt, IP, 8);
+    uint8_t left = pt >> 4;
+    uint8_t right = pt & 0x0F;
+
+    uint8_t temp = left ^ F(right, k1);
+    left = right;
+    right = temp;
+
+    uint8_t preoutput = (left << 4) | right;
+    return permute(preoutput, IP_INV, 8);
+}
+
+void ctr_mode(uint8_t *input, uint8_t *output, uint8_t key10, int blocks) {
+    uint8_t k1, k2;
+    generate_keys(key10, &k1, &k2);
+
+    uint8_t counter = 0;
+    for (int i = 0; i < blocks; i++) {
+        uint8_t keystream = sdes_encrypt(counter, k1, k2);
+        output[i] = input[i] ^ keystream;
+        counter++;
+    }
+}
+
+void print_bin(const char *label, uint8_t *data, int n) {
+    printf("%s: ", label);
+    for (int i = 0; i < n; i++)
+        for (int b = 7; b >= 0; b--)
+            printf("%d", (data[i] >> b) & 1);
+    printf("\n");
+}
+
+int main() {
+    uint8_t key10 = 0b0111111101;
+
+    uint8_t pt[3] = {
+        0b00000001,
+        0b00000010,
+        0b00000100
+    }
