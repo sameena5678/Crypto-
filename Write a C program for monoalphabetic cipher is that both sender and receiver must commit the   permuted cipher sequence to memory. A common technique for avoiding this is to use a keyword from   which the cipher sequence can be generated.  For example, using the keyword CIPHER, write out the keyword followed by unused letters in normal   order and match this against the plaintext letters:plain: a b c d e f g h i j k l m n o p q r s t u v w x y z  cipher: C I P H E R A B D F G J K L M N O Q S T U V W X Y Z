@@ -1,0 +1,84 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_LEN 26
+
+// Function to generate cipher alphabet based on keyword
+void generate_cipher_alphabet(const char *keyword, char cipher_alphabet[]) {
+    int used[26] = {0};
+    int index = 0;
+
+    // Add keyword characters first
+    for (int i = 0; keyword[i] != '\0'; i++) {
+        char ch = tolower(keyword[i]);
+        if (isalpha(ch) && !used[ch - 'a']) {
+            cipher_alphabet[index++] = ch;
+            used[ch - 'a'] = 1;
+        }
+    }
+
+    // Add remaining letters
+    for (char ch = 'a'; ch <= 'z'; ch++) {
+        if (!used[ch - 'a']) {
+            cipher_alphabet[index++] = ch;
+            used[ch - 'a'] = 1;
+        }
+    }
+}
+
+// Encrypt the plaintext
+void encrypt(const char *plaintext, const char *cipher_alphabet, char *ciphertext) {
+    for (int i = 0; plaintext[i] != '\0'; i++) {
+        char ch = tolower(plaintext[i]);
+        if (isalpha(ch)) {
+            ciphertext[i] = cipher_alphabet[ch - 'a'];
+        } else {
+            ciphertext[i] = ch;
+        }
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+}
+
+// Decrypt the ciphertext
+void decrypt(const char *ciphertext, const char *cipher_alphabet, char *plaintext) {
+    for (int i = 0; ciphertext[i] != '\0'; i++) {
+        char ch = tolower(ciphertext[i]);
+        if (isalpha(ch)) {
+            for (int j = 0; j < ALPHABET_LEN; j++) {
+                if (cipher_alphabet[j] == ch) {
+                    plaintext[i] = 'a' + j;
+                    break;
+                }
+            }
+        } else {
+            plaintext[i] = ch;
+        }
+    }
+    plaintext[strlen(ciphertext)] = '\0';
+}
+
+int main() {
+    const char *keyword = "CIPHER";
+    const char *plaintext = "attack at dawn";
+
+    char cipher_alphabet[ALPHABET_LEN];
+    char ciphertext[100];
+    char decrypted_text[100];
+
+    generate_cipher_alphabet(keyword, cipher_alphabet);
+
+    printf("Cipher Alphabet:\n");
+    for (int i = 0; i < ALPHABET_LEN; i++)
+        printf("%c ", cipher_alphabet[i]);
+    printf("\n");
+
+    encrypt(plaintext, cipher_alphabet, ciphertext);
+    printf("Plaintext : %s\n", plaintext);
+    printf("Encrypted : %s\n", ciphertext);
+
+    decrypt(ciphertext, cipher_alphabet, decrypted_text);
+    printf("Decrypted : %s\n", decrypted_text);
+
+    return 0;
+}
