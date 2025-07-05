@@ -1,0 +1,88 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX 2048
+#define ALPHABET_SIZE 26
+
+// English frequency order from most to least frequent
+const char englishFreqOrder[] = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+// Structure for counting and sorting letter frequencies
+typedef struct {
+    char letter;
+    int count;
+} Frequency;
+
+// Compare function for qsort - descending
+int freqCompare(const void *a, const void *b) {
+    return ((Frequency *)b)->count - ((Frequency *)a)->count;
+}
+
+// Apply frequency mapping and decrypt
+void decryptWithMapping(char *cipher, char *mapping, char *output) {
+    for (int i = 0; cipher[i]; i++) {
+        if (isalpha(cipher[i])) {
+            char c = toupper(cipher[i]);
+            int idx = c - 'A';
+            char decrypted = mapping[idx];
+            output[i] = isupper(cipher[i]) ? decrypted : tolower(decrypted);
+        } else {
+            output[i] = cipher[i];
+        }
+    }
+    output[strlen(cipher)] = '\0';
+}
+
+// Attack and generate top guesses
+void frequencyAttack(char *ciphertext, int topN) {
+    Frequency freq[ALPHABET_SIZE];
+    char cleanText[MAX], tempText[MAX];
+    int len = strlen(ciphertext);
+
+    // Initialize frequency table
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        freq[i].letter = 'A' + i;
+        freq[i].count = 0;
+    }
+
+    // Count frequencies
+    for (int i = 0; i < len; i++) {
+        if (isalpha(ciphertext[i])) {
+            char c = toupper(ciphertext[i]);
+            freq[c - 'A'].count++;
+        }
+    }
+
+    // Sort frequencies descending
+    qsort(freq, ALPHABET_SIZE, sizeof(Frequency), freqCompare);
+
+    // Try topN permutations (limited)
+    printf("\nTop %d Guesses (based on letter frequency mapping):\n", topN);
+    for (int guess = 0; guess < topN && guess < ALPHABET_SIZE; guess++) {
+        char mapping[ALPHABET_SIZE];
+        for (int i = 0; i < ALPHABET_SIZE; i++) {
+            int index = (i + guess) % ALPHABET_SIZE;
+            mapping[freq[i].letter - 'A'] = englishFreqOrder[index];
+        }
+        decryptWithMapping(ciphertext, mapping, tempText);
+        printf("\nGuess #%d:\n%s\n", guess + 1, tempText);
+    }
+}
+
+int main() {
+    char ciphertext[MAX];
+    int topN;
+
+    printf("Enter ciphertext: ");
+    fgets(ciphertext, MAX, stdin);
+    ciphertext[strcspn(ciphertext, "\n")] = '\0'; // Remove newline
+
+    printf("Enter number of top guesses to display: ");
+    scanf("%d", &topN);
+
+    frequencyAttack(ciphertext, topN);
+
+    return 0;
+}
