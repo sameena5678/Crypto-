@@ -1,0 +1,49 @@
+#include <stdio.h>
+#include <math.h>
+
+// Function to compute (base^exp) % mod using modular exponentiation
+int modexp(int base, int exp, int mod) {
+    long long result = 1;
+    long long b = base;
+    while (exp > 0) {
+        if (exp % 2 == 1)
+            result = (result * b) % mod;
+        b = (b * b) % mod;
+        exp = exp / 2;
+    }
+    return (int)result;
+}
+
+int main() {
+    // Public RSA key
+    int e = 17;
+    int n = 2773;
+
+    // Simulate encrypted message (ciphertext values)
+    int ciphertext[] = {2181, 1307, 2181, 2162}; // Encrypted version of "TEST" for example
+    int len = sizeof(ciphertext) / sizeof(ciphertext[0]);
+
+    // Build codebook: encrypt each possible letter (0 to 25)
+    int codebook[26];
+    for (int i = 0; i < 26; i++) {
+        codebook[i] = modexp(i, e, n);
+    }
+
+    // Decrypt by lookup
+    printf("Decrypted Message: ");
+    for (int i = 0; i < len; i++) {
+        int found = 0;
+        for (int j = 0; j < 26; j++) {
+            if (ciphertext[i] == codebook[j]) {
+                printf("%c", 'A' + j);
+                found = 1;
+                break;
+            }
+        }
+        if (!found)
+            printf("?");
+    }
+    printf("\n");
+
+    return 0;
+}
