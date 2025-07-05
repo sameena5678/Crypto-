@@ -1,0 +1,79 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX_TEXT_LEN 2048
+#define ALPHABET_SIZE 26
+
+// English letter frequencies ranked by most common letters
+const char english_order[] = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+// Struct for letter frequency data
+typedef struct {
+    char letter;
+    int count;
+} Frequency;
+
+// Compare function for sorting frequencies
+int compare_freq(const void *a, const void *b) {
+    Frequency *fa = (Frequency *)a;
+    Frequency *fb = (Frequency *)b;
+    return fb->count - fa->count;
+}
+
+// Frequency attack and mapping
+void frequency_attack(const char *cipher, int top_n) {
+    Frequency freq[ALPHABET_SIZE] = {0};
+    char cleaned[MAX_TEXT_LEN] = {0};
+    int len = 0;
+
+    // Count frequency and clean input
+    for (int i = 0; cipher[i]; i++) {
+        if (isalpha(cipher[i])) {
+            char upper = toupper(cipher[i]);
+            cleaned[len++] = upper;
+            freq[upper - 'A'].letter = upper;
+            freq[upper - 'A'].count++;
+        }
+    }
+    cleaned[len] = '\0';
+
+    // Assign missing letters for completeness
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        if (freq[i].letter == 0)
+            freq[i].letter = 'A' + i;
+    }
+
+    // Sort by frequency
+    qsort(freq, ALPHABET_SIZE, sizeof(Frequency), compare_freq);
+
+    // Try top_n permutations of frequency matches
+    for (int guess = 0; guess < top_n && guess < ALPHABET_SIZE; guess++) {
+        char map[ALPHABET_SIZE] = {0};
+
+        // Map most frequent cipher letters to most common English letters
+        for (int i = 0; i < ALPHABET_SIZE; i++) {
+            map[freq[i].letter - 'A'] = english_order[(i + guess) % ALPHABET_SIZE];
+        }
+
+        // Decrypt using frequency map
+        printf("Guess %d (shifted match):\n", guess + 1);
+        for (int i = 0; cipher[i]; i++) {
+            if (isalpha(cipher[i])) {
+                char base = isupper(cipher[i]) ? 'A' : 'a';
+                char mapped = map[toupper(cipher[i]) - 'A'];
+                printf("%c", isupper(cipher[i]) ? mapped : tolower(mapped));
+            } else {
+                printf("%c", cipher[i]);
+            }
+        }
+        printf("\n\n");
+    }
+}
+
+int main() {
+    char ciphertext[MAX_TEXT_LEN];
+    int top_n;
+
+    printf("Enter the monoalphabetic ciphertext:\n");
