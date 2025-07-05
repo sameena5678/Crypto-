@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#define MAX_TEXT 1000
+#define ALPHABET_SIZE 26
+
+// Expected frequency order of English letters (most to least frequent)
+const char english_freq[] = "ETAOINSHRDLCUMWFGYPBVKJXQZ";
+
+// Structure to hold letter frequencies
+typedef struct {
+    char letter;
+    int count;
+} Frequency;
+
+// Compare function for sorting frequencies
+int compare_freq(const void *a, const void *b) {
+    return ((Frequency *)b)->count - ((Frequency *)a)->count;
+}
+
+// Function to calculate letter frequency in ciphertext
+void calculate_frequency(const char *text, Frequency freq[]) {
+    for (int i = 0; i < ALPHABET_SIZE; i++) {
+        freq[i].letter = 'A' + i;
+        freq[i].count = 0;
+    }
+
+    for (int i = 0; text[i]; i++) {
+        if (isalpha(text[i])) {
+            char ch = toupper(text[i]);
+            freq[ch - 'A'].count++;
+        }
+    }
+
+    qsort(freq, ALPHABET_SIZE, sizeof(Frequency), compare_freq);
+}
+
+// Apply guessed substitution map to ciphertext
+void apply_substitution(const char *ciphertext, char *plaintext, char map[26]) {
+    for (int i = 0; ciphertext[i]; i++) {
+        char ch = ciphertext[i];
+        if (isalpha(ch)) {
+            int idx = toupper(ch) - 'A';
+            plaintext[i] = islower(ch) ? tolower(map[idx]) : map[idx];
+        } else {
+            plaintext[i] = ch;
+        }
+    }
+    plaintext[strlen(ciphertext)] = '\0';
+}
+
+// Generate and print top N possible plaintexts
+void generate_plaintexts(const char *ciphertext, int topN) {
+    Frequency freq[26];
+    calculate_frequency(ciphertext, freq);
+
+    // Try different mappings by permutating top 6 frequent letters
+    char mapping[26];
+    char base_map[26];
+
+    // Fill base map with '?' (unknowns)
+    for (int i = 0; i < 26; i++) {
+        base_map[i] = '?';
+    }
+
+    // Map most frequent letters
+    for (int i = 0; i < 6; i++) {
+        base_map[freq[i].letter - 'A'] = english_freq[i];
+    }
+
+    // Fill rest based on remaining letters in order
+    int used[26] = {0};
+    for (int i = 0; i < 6; i++)
+        used[english_freq[i] - 'A'] = 1;
+
+    int j = 6;
+    for (int i = 6; i < 26; i++) {
+        char eng = english_freq[i];
+        if (!used[eng - 'A']) {
+            for (int k = 0; k < 26; k++) {
+                if (base_map[freq[k].letter - 'A'] == '?') {
+                    base_map[freq[k].letter - 'A'] = eng;
+                    used[eng - 'A'] = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    printf("\n--- Top %d guessed plaintexts ---\n", topN);
+    for (int i = 0; i < topN; i++) {
+        char output[MAX_TEXT];
+        memcpy(mapping, base_map, sizeof(base_map));
+
+        // Swap two letters in the guessed mapping each time to simulate alternatives
+        if (i > 0 && i < 26) {
