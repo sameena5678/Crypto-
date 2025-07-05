@@ -1,0 +1,78 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MOD 26
+#define N 2  // Key matrix size 2x2 for simplicity
+
+// Function to find modular inverse of a number under mod 26
+int modInverse(int a) {
+    a = a % MOD;
+    for (int x = 1; x < MOD; x++) {
+        if ((a * x) % MOD == 1)
+            return x;
+    }
+    return -1;
+}
+
+// Function to calculate determinant of 2x2 matrix
+int determinant(int m[N][N]) {
+    return (m[0][0] * m[1][1] - m[0][1] * m[1][0]) % MOD;
+}
+
+// Function to find inverse of 2x2 matrix modulo 26
+int inverseMatrix(int m[N][N], int inv[N][N]) {
+    int det = determinant(m);
+    det = (det + MOD) % MOD;
+    int invDet = modInverse(det);
+    if (invDet == -1) return 0;
+
+    inv[0][0] =  m[1][1] * invDet % MOD;
+    inv[0][1] = -m[0][1] * invDet % MOD;
+    inv[1][0] = -m[1][0] * invDet % MOD;
+    inv[1][1] =  m[0][0] * invDet % MOD;
+
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            inv[i][j] = (inv[i][j] + MOD) % MOD;
+
+    return 1;
+}
+
+// Multiply matrices: result = A * B mod 26
+void multiplyMatrices(int A[N][N], int B[N][N], int result[N][N]) {
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++) {
+            result[i][j] = 0;
+            for (int k = 0; k < N; k++)
+                result[i][j] += A[i][k] * B[k][j];
+            result[i][j] %= MOD;
+        }
+}
+
+// Convert text to 2x2 matrix
+void textToMatrix(const char *text, int m[N][N]) {
+    for (int i = 0, k = 0; i < N; i++)
+        for (int j = 0; j < N; j++, k++)
+            m[i][j] = text[k] - 'A';
+}
+
+// Print matrix
+void printMatrix(int m[N][N]) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++)
+            printf("%3d", m[i][j]);
+        printf("\n");
+    }
+}
+
+int main() {
+    // Chosen plaintext (e.g., "HELP" → 2 blocks: "HE", "LP")
+    char plaintext[] = "HELP";        // Plaintext: 4 letters
+    char ciphertext[] = "ZEBB";       // Ciphertext corresponding to blocks
+
+    // Convert to matrices
+    int P[N][N], C[N][N], P_inv[N][N], Key[N][N];
+    textToMatrix(plaintext, P);       // Each row is a vector
+    textToMatrix(ciphertext, C);
+
+    print
