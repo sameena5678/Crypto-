@@ -1,0 +1,80 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX 100
+
+// Convert character to 0-25
+int charToNum(char c) {
+    return tolower(c) - 'a';
+}
+
+// Convert number to character
+char numToChar(int n) {
+    return 'a' + (n % 26);
+}
+
+// Remove spaces and convert to lowercase
+void cleanText(const char *input, char *output) {
+    int j = 0;
+    for (int i = 0; input[i]; i++) {
+        if (isalpha(input[i])) {
+            output[j++] = tolower(input[i]);
+        }
+    }
+    output[j] = '\0';
+}
+
+// Encrypt plaintext with given key stream
+void encryptOTP(char *plaintext, int key[], char *ciphertext) {
+    for (int i = 0; plaintext[i]; i++) {
+        int p = charToNum(plaintext[i]);
+        int c = (p + key[i]) % 26;
+        ciphertext[i] = numToChar(c);
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+}
+
+// Derive key stream from ciphertext and known plaintext
+void deriveKeyStream(char *plaintext, char *ciphertext, int key[]) {
+    for (int i = 0; plaintext[i]; i++) {
+        int p = charToNum(plaintext[i]);
+        int c = charToNum(ciphertext[i]);
+        key[i] = (c - p + 26) % 26;
+    }
+}
+
+int main() {
+    // ---------- Part (a) ----------
+    char plaintext1[] = "send more money";
+    int key1[] = {9, 0, 1, 7, 23, 15, 21, 14, 11, 11, 2, 8, 9};
+    char cleaned1[MAX], ciphertext1[MAX];
+
+    cleanText(plaintext1, cleaned1);
+    encryptOTP(cleaned1, key1, ciphertext1);
+
+    printf("Part (a):\n");
+    printf("Plaintext  : %s\n", cleaned1);
+    printf("Key Stream : ");
+    for (int i = 0; i < strlen(cleaned1); i++) printf("%d ", key1[i]);
+    printf("\nCiphertext : %s\n", ciphertext1);
+
+    // ---------- Part (b) ----------
+    char newPlaintext[] = "cash not needed";
+    char cleaned2[MAX];
+    int key2[MAX];
+
+    cleanText(newPlaintext, cleaned2);
+    deriveKeyStream(cleaned2, ciphertext1, key2);
+
+    printf("\nPart (b):\n");
+    printf("New Plaintext : %s\n", cleaned2);
+    printf("Ciphertext    : %s\n", ciphertext1);
+    printf("Derived Key   : ");
+    for (int i = 0; i < strlen(cleaned2); i++) {
+        printf("%d ", key2[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
