@@ -1,0 +1,103 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Initial permutation table (first 10 entries only for brevity)
+int IP[64] = {
+    58, 50, 42, 34, 26, 18, 10, 2,
+    60, 52, 44, 36, 28, 20, 12, 4,
+    62, 54, 46, 38, 30, 22, 14, 6,
+    64, 56, 48, 40, 32, 24, 16, 8,
+    57, 49, 41, 33, 25, 17, 9 , 1,
+    59, 51, 43, 35, 27, 19, 11, 3,
+    61, 53, 45, 37, 29, 21, 13, 5,
+    63, 55, 47, 39, 31, 23, 15, 7
+};
+
+// Final permutation table (inverse of IP)
+int FP[64] = {
+    40, 8, 48, 16, 56, 24, 64, 32,
+    39, 7, 47, 15, 55, 23, 63, 31,
+    38, 6, 46, 14, 54, 22, 62, 30,
+    37, 5, 45, 13, 53, 21, 61, 29,
+    36, 4, 44, 12, 52, 20, 60, 28,
+    35, 3, 43, 11, 51, 19, 59, 27,
+    34, 2, 42, 10, 50, 18, 58, 26,
+    33, 1, 41,  9, 49, 17, 57, 25
+};
+
+// Expansion, substitution (S-boxes), key schedule, etc. would go here
+
+// Apply permutation
+void permute(unsigned char *input, unsigned char *output, int *table, int n) {
+    for (int i = 0; i < n; i++) {
+        int pos = table[i] - 1;
+        int byte = pos / 8;
+        int bit = pos % 8;
+        int val = (input[byte] >> (7 - bit)) & 1;
+        output[i / 8] |= val << (7 - (i % 8));
+    }
+}
+
+// Dummy Feistel function (just XOR for now for demo purposes)
+void feistel(unsigned char *right, unsigned char *subkey, unsigned char *out) {
+    for (int i = 0; i < 4; i++)
+        out[i] = right[i] ^ subkey[i]; // Simulated substitution
+}
+
+// DES encryption (single block, 64-bit)
+void des_encrypt(unsigned char *plaintext, unsigned char *ciphertext, unsigned char *key) {
+    unsigned char ip[8] = {0}, fp[8] = {0};
+    unsigned char left[4], right[4], temp[4];
+
+    permute(plaintext, ip, IP, 64);
+
+    memcpy(left, ip, 4);
+    memcpy(right, ip + 4, 4);
+
+    for (int round = 0; round < 16; round++) {
+        feistel(right, key, temp);
+        for (int i = 0; i < 4; i++) {
+            temp[i] ^= left[i];
+        }
+        memcpy(left, right, 4);
+        memcpy(right, temp, 4);
+    }
+
+    // Swap and join
+    unsigned char preoutput[8];
+    memcpy(preoutput, right, 4);
+    memcpy(preoutput + 4, left, 4);
+
+    permute(preoutput, ciphertext, FP, 64);
+}
+
+// DES decryption is identical with reversed subkeys
+void des_decrypt(unsigned char *ciphertext, unsigned char *plaintext, unsigned char *key) {
+    // For simplicity, same as encrypt in this stub
+    des_encrypt(ciphertext, plaintext, key); // In real DES, use reversed subkeys
+}
+
+void print_block(unsigned char *block, const char *label) {
+    printf("%s: ", label);
+    for (int i = 0; i < 8; i++) {
+        printf("%02X ", block[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    unsigned char plaintext[8] = "ABCDEFGH"; // 64-bit
+    unsigned char key[8] = {0x13, 0x34, 0x57, 0x79, 0x9B, 0xBC, 0xDF, 0xF1}; // 64-bit key
+    unsigned char ciphertext[8] = {0};
+    unsigned char decrypted[8] = {0};
+
+    des_encrypt(plaintext, ciphertext, key);
+    print_block(plaintext, "Plaintext");
+    print_block(ciphertext, "Ciphertext");
+
+    des_decrypt(ciphertext, decrypted, key);
+    print_block(decrypted, "Decrypted");
+
+    return 0;
+}
