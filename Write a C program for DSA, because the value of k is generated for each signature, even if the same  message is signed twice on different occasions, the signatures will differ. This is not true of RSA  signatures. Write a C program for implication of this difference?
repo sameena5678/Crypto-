@@ -1,0 +1,79 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+// Modular exponentiation (a^b mod m)
+long long modexp(long long base, long long exp, long long mod) {
+    long long result = 1;
+    base = base % mod;
+    while (exp > 0) {
+        if (exp % 2)
+            result = (result * base) % mod;
+        exp = exp >> 1;
+        base = (base * base) % mod;
+    }
+    return result;
+}
+
+// Modular inverse (naive)
+long long modinv(long long a, long long m) {
+    for (long long x = 1; x < m; x++) {
+        if ((a * x) % m == 1)
+            return x;
+    }
+    return -1;
+}
+
+// Hash simulation
+long long hash(char *message) {
+    long long h = 0;
+    while (*message) h = (h * 31 + *message++) % 101;
+    return h;
+}
+
+// Simulate DSA signature
+void sign_dsa(char *msg, long long p, long long q, long long g, long long x, long long *r_out, long long *s_out) {
+    long long h = hash(msg);
+    long long k = rand() % (q - 1) + 1;
+    long long r = modexp(g, k, p) % q;
+    long long k_inv = modinv(k, q);
+    long long s = (k_inv * (h + x * r)) % q;
+    *r_out = r;
+    *s_out = s;
+}
+
+// Simulate RSA signature
+long long sign_rsa(char *msg, long long d, long long n) {
+    long long h = hash(msg);
+    return modexp(h, d, n);
+}
+
+int main() {
+    srand(time(NULL));
+    char msg[] = "secure message";
+
+    // RSA Parameters
+    long long rsa_d = 2753, rsa_n = 3233;
+
+    // DSA Parameters (small primes for demo only)
+    long long p = 23, q = 11, g = 4, x = 3;
+
+    printf("Message: %s\n", msg);
+
+    // DSA: Sign twice
+    long long r1, s1, r2, s2;
+    sign_dsa(msg, p, q, g, x, &r1, &s1);
+    sign_dsa(msg, p, q, g, x, &r2, &s2);
+    printf("\nDSA Signatures (same msg):\n");
+    printf("Signature 1: r = %lld, s = %lld\n", r1, s1);
+    printf("Signature 2: r = %lld, s = %lld\n", r2, s2);
+
+    // RSA: Sign twice
+    long long rsa_sig1 = sign_rsa(msg, rsa_d, rsa_n);
+    long long rsa_sig2 = sign_rsa(msg, rsa_d, rsa_n);
+    printf("\nRSA Signatures (same msg):\n");
+    printf("Signature 1: %lld\n", rsa_sig1);
+    printf("Signature 2: %lld\n", rsa_sig2);
+
+    return 0;
+}
