@@ -1,0 +1,59 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+// Function to find GCD
+int gcd(int a, int b) {
+    return b == 0 ? a : gcd(b, a % b);
+}
+
+// Function to find modular inverse of a under modulo m
+int modInverse(int a, int m) {
+    for (int i = 1; i < m; i++) {
+        if ((a * i) % m == 1)
+            return i;
+    }
+    return -1; // Inverse doesn't exist
+}
+
+// Encrypt character
+char encryptChar(char ch, int a, int b) {
+    if (isalpha(ch)) {
+        ch = toupper(ch);
+        return ((a * (ch - 'A') + b) % 26) + 'A';
+    }
+    return ch;
+}
+
+// Decrypt character
+char decryptChar(char ch, int a, int b) {
+    if (isalpha(ch)) {
+        ch = toupper(ch);
+        int a_inv = modInverse(a, 26);
+        if (a_inv == -1) {
+            printf("Modular inverse does not exist, decryption not possible.\n");
+            return '?';
+        }
+        return ((a_inv * ((ch - 'A') - b + 26)) % 26) + 'A';
+    }
+    return ch;
+}
+
+// Encrypt entire string
+void encryptText(char *plaintext, char *ciphertext, int a, int b) {
+    for (int i = 0; i < strlen(plaintext); i++) {
+        ciphertext[i] = encryptChar(plaintext[i], a, b);
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+}
+
+// Decrypt entire string
+void decryptText(char *ciphertext, char *plaintext, int a, int b) {
+    for (int i = 0; i < strlen(ciphertext); i++) {
+        plaintext[i] = decryptChar(ciphertext[i], a, b);
+    }
+    plaintext[strlen(ciphertext)] = '\0';
+}
+
+int main() {
+    char plaintext[100]
