@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define TOTAL_LANES 25
+#define RATE_LANES 16
+#define CAPACITY_LANES 9
+
+int all_nonzero(uint64_t *lanes, int start, int count) {
+    for (int i = 0; i < count; i++) {
+        if (lanes[start + i] == 0)
+            return 0;
+    }
+    return 1;
+}
+
+int main() {
+    uint64_t state[TOTAL_LANES] = {0};
+
+    srand(time(NULL));
+
+    // Initialize rate lanes (first 16) with random non-zero values
+    for (int i = 0; i < RATE_LANES; i++) {
+        // Ensure non-zero values
+        do {
+            state[i] = ((uint64_t)rand() << 32) | rand();
+        } while (state[i] == 0);
+    }
+
+    // Capacity lanes (last 9) start as zero
+    for (int i = RATE_LANES; i < TOTAL_LANES; i++) {
+        state[i] = 0;
+    }
+
+    int rounds = 0;
+
+    while (!all_nonzero(state, RATE_LANES, CAPACITY_LANES)) {
+        rounds++;
+
+        // Simulate mixing: each capacity lane gets OR'ed with a random rate lane
+        for (int i = RATE_LANES; i < TOTAL_LANES; i++) {
+            int r = rand() % RATE_LANES;
+            state[i] |= state[r];
+        }
+    }
+
+    printf("All capacity lanes became non-zero after %d rounds.\n", rounds);
+
+    return 0;
+}#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define TOTAL_LANES 25
+#define RATE_LANES 16
+#define CAPACITY_LANES 9
+
+int all_nonzero(uint64_t *lanes, int start, int count) {
+    for (int i = 0; i < count; i++) {
+        if (lanes[start + i] == 0)
+            return 0;
+    }
+    return 1;
+}
+
+int main() {
+    uint64_t state[TOTAL_LANES] = {0};
+
+    srand(time(NULL));
+
+    // Initialize rate lanes (first 16) with random non-zero values
+    for (int i = 0; i < RATE_LANES; i++) {
+        // Ensure non-zero values
+        do {
+            state[i] = ((uint64_t)rand() << 32) | rand();
+        } while (state[i] == 0);
+    }
+
+    // Capacity lanes (last 9) start as zero
+    for (int i = RATE_LANES; i < TOTAL_LANES; i++) {
+        state[i] = 0;
+    }
+
+    int rounds = 0;
+
+    while (!all_nonzero(state, RATE_LANES, CAPACITY_LANES)) {
+        rounds++;
+
+        // Simulate mixing: each capacity lane gets OR'ed with a random rate lane
+        for (int i = RATE_LANES; i < TOTAL_LANES; i++) {
+            int r = rand() % RATE_LANES;
+            state[i] |= state[r];
+        }
+    }
+
+    printf("All capacity lanes became non-zero after %d rounds.\n", rounds);
+
+    return 0;
+}
