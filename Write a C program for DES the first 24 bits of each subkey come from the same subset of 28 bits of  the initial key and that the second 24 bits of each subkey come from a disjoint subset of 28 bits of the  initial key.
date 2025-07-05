@@ -1,0 +1,132 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// Number of shifts for each round
+int SHIFTS[] = { 
+    1, 1, 2, 2, 
+    2, 2, 2, 2, 
+    1, 2, 2, 2, 
+    2, 2, 2, 1 
+};
+
+// PC-1 table: from 64 to 56 bits
+int PC1[] = {
+    57,49,41,33,25,17,9,
+    1,58,50,42,34,26,18,
+    10,2,59,51,43,35,27,
+    19,11,3,60,52,44,36,
+    63,55,47,39,31,23,15,
+    7,62,54,46,38,30,22,
+    14,6,61,53,45,37,29,
+    21,13,5,28,20,12,4
+};
+
+// PC-2 table: normally from 56 to 48 bits (used for encryption/decryption)
+int PC2_C[] = { // First 24 bits from C half
+    14,17,11,24,1,5,3,28,15,6,21,10,
+    23,19,12,4,26,8,16,7,27,20,13,2
+};
+
+int PC2_D[] = { // Last 24 bits from D half
+    41,52,31,37,47,55,30,40,51,45,33,48,
+    44,49,39,56,34,53,46,42,50,36,29,32
+};
+
+// Convert hex to binary string
+void hexToBinary(const char *hex, char *bin) {
+    char temp[5];
+    bin[0] = '\0';
+    for (int i = 0; i < strlen(hex); i++) {
+        switch (toupper(hex[i])) {
+            case '0': strcpy(temp, "0000"); break;
+            case '1': strcpy(temp, "0001"); break;
+            case '2': strcpy(temp, "0010"); break;
+            case '3': strcpy(temp, "0011"); break;
+            case '4': strcpy(temp, "0100"); break;
+            case '5': strcpy(temp, "0101"); break;
+            case '6': strcpy(temp, "0110"); break;
+            case '7': strcpy(temp, "0111"); break;
+            case '8': strcpy(temp, "1000"); break;
+            case '9': strcpy(temp, "1001"); break;
+            case 'A': case 'a': strcpy(temp, "1010"); break;
+            case 'B': case 'b': strcpy(temp, "1011"); break;
+            case 'C': case 'c': strcpy(temp, "1100"); break;
+            case 'D': case 'd': strcpy(temp, "1101"); break;
+            case 'E': case 'e': strcpy(temp, "1110"); break;
+            case 'F': case 'f': strcpy(temp, "1111"); break;
+            default: strcpy(temp, "0000");
+        }
+        strcat(bin, temp);
+    }
+}
+
+// Left circular shift
+void leftShift(char *keyHalf, int shifts) {
+    char temp[28];
+    for (int i = 0; i < 28; i++)
+        temp[i] = keyHalf[(i + shifts) % 28];
+    memcpy(keyHalf, temp, 28);
+}
+
+// Apply permutation
+void permute(const char *in, char *out, const int *table, int n) {
+    for (int i = 0; i < n; i++) {
+        out[i] = in[table[i] - 1];
+    }
+}
+
+// Print 48-bit key in hex
+void printBinaryAsHex(const char *bin, int length) {
+    for (int i = 0; i < length; i += 4) {
+        int val = 0;
+        for (int j = 0; j < 4; j++)
+            val = val * 2 + (bin[i + j] - '0');
+        printf("%X", val);
+    }
+    printf("\n");
+}
+
+// Generate subkeys with 24 bits from C and 24 from D
+void generateSubkeys(const char *hexKey) {
+    char binKey[65], permutedKey[57];
+    char C[29], D[29], C24[25], D24[25], subkey[49];
+
+    hexToBinary(hexKey, binKey);
+
+    // Apply PC-1 to get 56-bit key
+    permute(binKey, permutedKey, PC1, 56);
+    permutedKey[56] = '\0';
+
+    memcpy(C, permutedKey, 28); C[28] = '\0';
+    memcpy(D, permutedKey + 28, 28); D[28] = '\0';
+
+    printf("\nDES Subkeys (24 bits from C, 24 bits from D):\n");
+
+    for (int round = 0; round < 16; round++) {
+        leftShift(C, SHIFTS[round]);
+        leftShift(D, SHIFTS[round]);
+
+        permute(C, C24, PC2_C, 24); C24[24] = '\0';
+        permute(D, D24, PC2_D, 24); D24[24] = '\0';
+
+        memcpy(subkey, C24, 24);
+        memcpy(subkey + 24, D24, 24);
+        subkey[48] = '\0';
+
+        printf("K%02d: ", round + 1);
+        printBinaryAsHex(subkey, 48);
+    }
+}
+
+int main() {
+    char key[17];
+
+    printf("Enter 64-bit HEX key (16 hex digits): ");
+    scanf("%16s", key);
+
+    generateSubkeys(key);
+
+    return 0;
+}
