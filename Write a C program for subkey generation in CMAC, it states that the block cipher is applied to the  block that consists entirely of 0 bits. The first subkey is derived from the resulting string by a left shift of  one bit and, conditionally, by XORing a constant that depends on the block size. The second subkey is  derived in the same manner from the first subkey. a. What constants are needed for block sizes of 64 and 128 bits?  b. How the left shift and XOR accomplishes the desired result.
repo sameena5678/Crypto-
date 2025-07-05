@@ -1,0 +1,52 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+
+// Helper function to print 128-bit value
+void print_block(uint8_t *block, int size) {
+    for (int i = 0; i < size; i++)
+        printf("%02X", block[i]);
+    printf("\n");
+}
+
+// Left shift by 1 bit on a block of size n bytes
+void left_shift_one_bit(uint8_t *input, uint8_t *output, int size) {
+    uint8_t carry = 0;
+    for (int i = size - 1; i >= 0; i--) {
+        output[i] = (input[i] << 1) | carry;
+        carry = (input[i] & 0x80) ? 1 : 0;
+    }
+}
+
+// XOR block with Rb
+void xor_rb(uint8_t *block, uint8_t Rb, int size) {
+    block[size - 1] ^= Rb;
+}
+
+int main() {
+    // Select block size: 128-bit (16 bytes) or 64-bit (8 bytes)
+    int block_size = 16; // For AES-CMAC use 16; for DES-CMAC use 8
+    uint8_t Rb = (block_size == 16) ? 0x87 : 0x1B;
+
+    uint8_t L[16] = { 0x6B, 0xC1, 0xBE, 0xE2, 0x2E, 0x40, 0x9F, 0x96,
+                      0xE9, 0x3D, 0x7E, 0x11, 0x73, 0x93, 0x17, 0x2A }; // Pretend encrypted 0s
+
+    uint8_t K1[16], K2[16];
+
+    // Step 1: Derive K1
+    left_shift_one_bit(L, K1, block_size);
+    if (L[0] & 0x80) // MSB is 1
+        xor_rb(K1, Rb, block_size);
+
+    // Step 2: Derive K2
+    left_shift_one_bit(K1, K2, block_size);
+    if (K1[0] & 0x80)
+        xor_rb(K2, Rb, block_size);
+
+    printf("Subkey K1: ");
+    print_block(K1, block_size);
+    printf("Subkey K2: ");
+    print_block(K2, block_size);
+
+    return 0;
+}
