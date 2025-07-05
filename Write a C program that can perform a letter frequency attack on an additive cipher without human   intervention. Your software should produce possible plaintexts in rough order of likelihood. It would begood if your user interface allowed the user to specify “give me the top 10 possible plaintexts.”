@@ -1,0 +1,100 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX 1024
+#define ALPHABET_SIZE 26
+
+// English letter frequencies from 'a' to 'z' (in percentage)
+double englishFreq[ALPHABET_SIZE] = {
+    8.167, 1.492, 2.782, 4.253, 12.702,
+    2.228, 2.015, 6.094, 6.966, 0.153,
+    0.772, 4.025, 2.406, 6.749, 7.507,
+    1.929, 0.095, 5.987, 6.327, 9.056,
+    2.758, 0.978, 2.360, 0.150, 1.974, 0.074
+};
+
+// Struct to store result and score
+typedef struct {
+    char plaintext[MAX];
+    double score;
+    int key;
+} DecryptionCandidate;
+
+// Compare function for sorting
+int compare(const void *a, const void *b) {
+    DecryptionCandidate *p1 = (DecryptionCandidate *)a;
+    DecryptionCandidate *p2 = (DecryptionCandidate *)b;
+    return (p2->score > p1->score) - (p2->score < p1->score);
+}
+
+// Frequency attack on Caesar cipher
+void frequencyAttack(char *ciphertext, int topN) {
+    DecryptionCandidate candidates[ALPHABET_SIZE];
+    int len = strlen(ciphertext);
+
+    for (int key = 0; key < ALPHABET_SIZE; key++) {
+        char decrypted[MAX];
+        int letterCount[ALPHABET_SIZE] = {0};
+        int totalLetters = 0;
+
+        for (int i = 0; i < len; i++) {
+            if (isalpha(ciphertext[i])) {
+                char c = tolower(ciphertext[i]);
+                int decryptedChar = (charToNum(c) - key + 26) % 26;
+                decrypted[i] = numToChar(decryptedChar);
+                letterCount[decryptedChar]++;
+                totalLetters++;
+            } else {
+                decrypted[i] = ciphertext[i]; // Keep punctuation
+            }
+        }
+        decrypted[len] = '\0';
+
+        // Score: dot product with English frequency
+        double score = 0.0;
+        for (int i = 0; i < ALPHABET_SIZE; i++) {
+            double freq = (letterCount[i] / (double)totalLetters) * 100;
+            score += freq * englishFreq[i];
+        }
+
+        strcpy(candidates[key].plaintext, decrypted);
+        candidates[key].score = score;
+        candidates[key].key = key;
+    }
+
+    // Sort candidates by score
+    qsort(candidates, ALPHABET_SIZE, sizeof(DecryptionCandidate), compare);
+
+    // Output top N candidates
+    printf("\nTop %d Possible Plaintexts:\n", topN);
+    for (int i = 0; i < topN && i < ALPHABET_SIZE; i++) {
+        printf("Key %2d: %s\n", candidates[i].key, candidates[i].plaintext);
+    }
+}
+
+// Helpers to map between letters and numbers
+int charToNum(char c) {
+    return c - 'a';
+}
+
+char numToChar(int n) {
+    return 'a' + (n % 26);
+}
+
+int main() {
+    char input[MAX];
+    int topN;
+
+    printf("Enter ciphertext: ");
+    fgets(input, MAX, stdin);
+    input[strcspn(input, "\n")] = '\0';  // Remove newline
+
+    printf("Enter number of top guesses to display: ");
+    scanf("%d", &topN);
+
+    frequencyAttack(input, topN);
+
+    return 0;
+}
