@@ -1,0 +1,20 @@
+#include <stdio.h>
+#include <math.h>
+
+// Function to compute log2(n!) using Stirling's approximation
+double log2Factorial(int n) {
+    double pi = acos(-1.0);
+    double result = n * log2(n) - n * log2(exp(1)) + 0.5 * log2(2 * pi * n);
+    return result;
+}
+
+int main() {
+    int n = 25; // 25 letters used in Playfair
+    double log2_all_keys = log2Factorial(n);           // log2(25!)
+    double log2_unique_keys = log2_all_keys - log2(8); // subtract log2(8)
+
+    printf("Total possible Playfair keys (25!): ≈ 2^%.2f\n", log2_all_keys);
+    printf("Effectively unique Playfair keys (25!/8): ≈ 2^%.2f\n", log2_unique_keys);
+
+    return 0;
+}
