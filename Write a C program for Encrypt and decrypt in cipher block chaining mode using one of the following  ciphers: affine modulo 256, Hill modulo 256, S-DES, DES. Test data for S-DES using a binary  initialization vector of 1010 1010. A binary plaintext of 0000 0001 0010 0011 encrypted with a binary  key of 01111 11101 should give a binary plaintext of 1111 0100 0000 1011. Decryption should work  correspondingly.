@@ -1,0 +1,22 @@
+#include <stdio.h>
+#include <stdint.h>
+
+// Initial permutation for 8 bits
+int IP[] = {1, 5, 2, 0, 3, 7, 4, 6};
+// Inverse IP
+int IP_INV[] = {3, 0, 2, 4, 6, 1, 7, 5};
+// Permutation P10 and P8
+int P10[] = {2, 4, 1, 6, 3, 9, 0, 8, 7, 5};
+int P8[]  = {5, 2, 6, 3, 7, 4, 9, 8};
+// EP, P4
+int EP[]  = {3, 0, 1, 2, 1, 2, 3, 0};
+int P4[]  = {1, 3, 2, 0};
+
+// S-boxes
+int S0[4][4] = {
+    {1, 0, 3, 2},
+    {3, 2, 1, 0},
+    {0, 2, 1, 3},
+    {3, 1, 3, 2}};
+int S1[4][4] = {
+    {0
